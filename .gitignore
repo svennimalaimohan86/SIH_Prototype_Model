@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+venv/
+.venv/
+env/
+backend/venv/
+
+# Build and distribution
+dist/
+frontend/dist/
+build/
+*.egg-info/
+
+# Databases & local state
+*.db
+*.sqlite3
+backend/nexora.db
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Vite / bundler cache
+.vite/
+frontend/.vite/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and Editor files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
