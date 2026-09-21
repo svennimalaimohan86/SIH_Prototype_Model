@@ -31,6 +31,13 @@ class AccountRiskScoreResponse(BaseModel):
     is_flagged: bool
     risk_score: int
     risk_level: str  # LOW, MEDIUM, HIGH, CRITICAL
+    is_frozen: bool = False
+    freeze_status: str = "ACTIVE"
+    freeze_reference: Optional[str] = None
+    frozen_at: Optional[datetime] = None
+    freeze_reason: Optional[str] = None
+    lien_amount: Optional[float] = None
+    nodal_bank_name: Optional[str] = None
     features: Dict[str, Any]
     contributions: List[FeatureContribution]
     reasons: List[str]
@@ -54,6 +61,10 @@ class GraphLink(BaseModel):
     amount: float
     transaction_count: int
     transaction_type: str
+    timestamp: Optional[str] = None
+    time_offset_minutes: float = 0.0
+    hop_layer: int = 1
+    narration: Optional[str] = None
 
 class MoneyFlowGraphResponse(BaseModel):
     selected_account_id: str
@@ -106,3 +117,44 @@ class ATMLocationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FreezeAccountRequest(BaseModel):
+    freeze_type: str = "DEBIT_FREEZE"  # DEBIT_FREEZE, LIEN_MARKED, TOTAL_FREEZE
+    reason: str
+    lien_amount: Optional[float] = None
+    nodal_bank_name: Optional[str] = "State Bank of India - Nodal Operations"
+    investigator_name: Optional[str] = "Krishna S (Badge #21) • Lead Cybercrime Investigator"
+
+
+class FreezeAccountResponse(BaseModel):
+    account_id: int
+    account_number: str
+    is_frozen: bool
+    freeze_status: str
+    freeze_reference: str
+    frozen_at: datetime
+    message: str
+
+
+class BnssNoticeResponse(BaseModel):
+    notice_reference: str
+    statutory_act: str
+    legal_sections: List[str]
+    issuing_authority: str
+    investigating_officer: str
+    investigator_badge: str
+    issue_timestamp: datetime
+    target_bank: str
+    account_number: str
+    account_holder_name: str
+    account_type: str
+    city_jurisdiction: str
+    freeze_action: str
+    lien_amount: Optional[float] = None
+    case_complaint_ref: str
+    utr_references: List[str]
+    forensic_anomaly_score: int
+    xai_justification: List[str]
+    statutory_orders: List[str]
+    verification_hash: str

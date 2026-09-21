@@ -15,6 +15,16 @@ class Account(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_flagged = Column(Boolean, default=False)
 
+    # Section 107 BNSS Statutory Freeze Attributes
+    is_frozen = Column(Boolean, default=False)
+    freeze_status = Column(String(32), default="ACTIVE")  # ACTIVE, DEBIT_FREEZE, LIEN_MARKED, TOTAL_FREEZE
+    freeze_reason = Column(Text, nullable=True)
+    freeze_reference = Column(String(64), nullable=True)
+    frozen_at = Column(DateTime, nullable=True)
+    freeze_investigator = Column(String(128), default="Krishna S (Badge #21) • Lead Cybercrime Investigator")
+    lien_amount = Column(Float, nullable=True)
+    nodal_bank_name = Column(String(128), nullable=True)
+
     # Relationships
     sent_transactions = relationship("Transaction", foreign_keys="[Transaction.sender_account_id]", back_populates="sender")
     received_transactions = relationship("Transaction", foreign_keys="[Transaction.receiver_account_id]", back_populates="receiver")

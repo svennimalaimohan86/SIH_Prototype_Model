@@ -127,28 +127,118 @@ def get_account_subgraph(account_id: int, db: Session, max_nodes: int = 14) -> D
     # Sort nodes so target is first
     nodes_list.sort(key=lambda n: 0 if n["id"] == target_str else (100 - n["risk_score"]))
 
-    # Build clean link records
+    # Build clean link records with incremental timeline progression (0 to 150 mins)
     links_list = []
     total_inflow = 0.0
     total_outflow = 0.0
 
+    # Base forensic timeline start: 17 Sept 2026, 10:00 AM
+    from datetime import datetime, timedelta
+    base_time = datetime(2026, 9, 17, 10, 0, 0)
+
+    # Sort selected edges to ensure sequential forensic progression:
+    # 1. Inflow into target (Victim/Feeder -> Target Mule) [T+00:00 to 00:25]
+    # 2. Outflow from target (Target Mule -> Secondary Mules) [T+00:30 to 01:10]
+    # 3. Secondary hops (Secondary Mules -> Terminal/ATM/Cashouts) [T+01:15 to 02:30]
+    
+    inflow_edges = []
+    outflow_edges = []
+    secondary_edges = []
+
     for u, v, data in selected_edges:
+        if v == target_str:
+            inflow_edges.append((u, v, data))
+        elif u == target_str:
+            outflow_edges.append((u, v, data))
+        else:
+            secondary_edges.append((u, v, data))
+
+    # Assign sequential timeline offsets
+    current_offset = 5.0
+
+    for i, (u, v, data) in enumerate(inflow_edges):
         amt = float(data.get("amount", 0.0))
         tx_count = int(data.get("transaction_count", 1))
-        tx_type = data.get("transaction_type", "TRANSFER")
+        tx_type = data.get("transaction_type", "IMPS")
+        total_inflow += amt
 
-        if u == target_str:
-            total_outflow += amt
-        if v == target_str:
-            total_inflow += amt
+        # Spread inflow within first 25 minutes
+        offset = round(current_offset + i * 6.5, 1)
+        tx_time = (base_time + timedelta(minutes=offset)).strftime("%Y-%m-%d %H:%M:%S")
+
+        source_acc = G.nodes.get(u, {})
+        source_name = source_acc.get("name", f"Account NX-{u}")
 
         links_list.append({
             "source": u,
             "target": v,
             "amount": amt,
             "transaction_count": tx_count,
-            "transaction_type": tx_type
+            "transaction_type": tx_type,
+            "timestamp": tx_time,
+            "time_offset_minutes": offset,
+            "hop_layer": 1,
+            "narration": f"Unauthorized {tx_type} inflow from {source_name} into primary target (₹{amt:,.0f})"
         })
+
+    current_offset = 32.0
+    for i, (u, v, data) in enumerate(outflow_edges):
+        amt = float(data.get("amount", 0.0))
+        tx_count = int(data.get("transaction_count", 1))
+        tx_type = data.get("transaction_type", "IMPS")
+        total_outflow += amt
+
+        # Spread outflow between 30 and 70 minutes
+        offset = round(current_offset + i * 8.0, 1)
+        tx_time = (base_time + timedelta(minutes=offset)).strftime("%Y-%m-%d %H:%M:%S")
+
+        dest_acc = G.nodes.get(v, {})
+        dest_name = dest_acc.get("name", f"Account NX-{v}")
+
+        links_list.append({
+            "source": u,
+            "target": v,
+            "amount": amt,
+            "transaction_count": tx_count,
+            "transaction_type": tx_type,
+            "timestamp": tx_time,
+            "time_offset_minutes": offset,
+            "hop_layer": 2,
+            "narration": f"Rapid velocity fan-out burst to Layer 1 Mule: {dest_name} (₹{amt:,.0f})"
+        })
+
+    current_offset = 78.0
+    for i, (u, v, data) in enumerate(secondary_edges):
+        amt = float(data.get("amount", 0.0))
+        tx_count = int(data.get("transaction_count", 1))
+        tx_type = data.get("transaction_type", "ATM_WITHDRAWAL" if i % 2 == 1 else "IMPS")
+
+        # Spread secondary hops between 75 and 145 minutes
+        offset = round(current_offset + i * 14.0, 1)
+        if offset > 148.0:
+            offset = 148.0
+        tx_time = (base_time + timedelta(minutes=offset)).strftime("%Y-%m-%d %H:%M:%S")
+
+        dest_acc = G.nodes.get(v, {})
+        dest_name = dest_acc.get("name", f"Terminal / Node NX-{v}")
+
+        layer_tag = 3 if offset < 110 else 4
+        action_name = "Secondary smurfing split" if layer_tag == 3 else "ATM Cash-out / Liquidation"
+
+        links_list.append({
+            "source": u,
+            "target": v,
+            "amount": amt,
+            "transaction_count": tx_count,
+            "transaction_type": tx_type,
+            "timestamp": tx_time,
+            "time_offset_minutes": offset,
+            "hop_layer": layer_tag,
+            "narration": f"{action_name} at {dest_name} (₹{amt:,.0f})"
+        })
+
+    # Sort all links strictly by chronological time offset
+    links_list.sort(key=lambda x: x["time_offset_minutes"])
 
     return {
         "selected_account_id": target_str,
@@ -157,3 +247,4 @@ def get_account_subgraph(account_id: int, db: Session, max_nodes: int = 14) -> D
         "total_inflow": total_inflow,
         "total_outflow": total_outflow
     }
+

@@ -55,4 +55,28 @@ export const api = {
     const response = await client.get<OverviewStats>('/overview/stats');
     return response.data;
   },
+
+  freezeAccount: async (
+    accountId: number | string,
+    payload: {
+      freeze_type: string;
+      reason: string;
+      lien_amount?: number;
+      nodal_bank_name?: string;
+      investigator_name?: string;
+    }
+  ) => {
+    const response = await client.post(`/accounts/${accountId}/freeze`, payload);
+    return response.data;
+  },
+
+  unfreezeAccount: async (accountId: number | string) => {
+    const response = await client.post(`/accounts/${accountId}/unfreeze`);
+    return response.data;
+  },
+
+  getBnssNotice: async (accountId: number | string) => {
+    const response = await client.get(`/accounts/${accountId}/bnss-notice`);
+    return response.data;
+  },
 };

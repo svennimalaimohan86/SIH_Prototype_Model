@@ -48,3 +48,39 @@
   margin: 0 !important;
   line-height: 1.4 !important;
 }
+
+/* Animated Police Siren Strobes */
+@keyframes strobe-red {
+  0%, 100% {
+    background-color: #EF4444;
+    box-shadow: 0 0 8px 3px rgba(239, 68, 68, 0.95);
+    opacity: 1;
+  }
+  50% {
+    background-color: #7F1D1D;
+    box-shadow: none;
+    opacity: 0.25;
+  }
+}
+
+@keyframes strobe-blue {
+  0%, 100% {
+    background-color: #1E3A8A;
+    box-shadow: none;
+    opacity: 0.25;
+  }
+  50% {
+    background-color: #3B82F6;
+    box-shadow: 0 0 8px 3px rgba(59, 130, 246, 0.95);
+    opacity: 1;
+  }
+}
+
+.police-strobe-red {
+  animation: strobe-red 0.5s infinite ease-in-out;
+}
+
+.police-strobe-blue {
+  animation: strobe-blue 0.5s infinite ease-in-out;
+}
+

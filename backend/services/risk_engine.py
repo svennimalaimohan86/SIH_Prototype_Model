@@ -117,6 +117,13 @@ def get_risk_scores(db: Session, force_recompute: bool = False) -> List[Dict[str
                 s["balance"] = acc.balance
                 s["city"] = acc.city
                 s["is_flagged"] = acc.is_flagged or s["features"].get("is_flagged", False)
+                s["is_frozen"] = bool(getattr(acc, "is_frozen", False))
+                s["freeze_status"] = getattr(acc, "freeze_status", "ACTIVE") or "ACTIVE"
+                s["freeze_reference"] = getattr(acc, "freeze_reference", None)
+                s["frozen_at"] = getattr(acc, "frozen_at", None)
+                s["freeze_reason"] = getattr(acc, "freeze_reason", None)
+                s["lien_amount"] = getattr(acc, "lien_amount", None)
+                s["nodal_bank_name"] = getattr(acc, "nodal_bank_name", None)
 
         _cached_scores = scores
 

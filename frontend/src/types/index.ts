@@ -18,6 +18,13 @@ export interface AccountRiskScore {
   is_flagged: boolean;
   risk_score: number;
   risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  is_frozen?: boolean;
+  freeze_status?: string;
+  freeze_reference?: string;
+  frozen_at?: string;
+  freeze_reason?: string;
+  lien_amount?: number;
+  nodal_bank_name?: string;
   features: {
     transaction_frequency: number;
     average_transaction_amount: number;
@@ -54,6 +61,10 @@ export interface GraphLink {
   amount: number;
   transaction_count: number;
   transaction_type: string;
+  timestamp?: string;
+  time_offset_minutes?: number;
+  hop_layer?: number;
+  narration?: string;
 }
 
 export interface MoneyFlowGraph {
@@ -105,4 +116,45 @@ export interface OverviewStats {
   predicted_cashouts: number;
   total_volume_inr: number;
   suspicious_volume_inr: number;
+}
+
+export interface FreezeRequestPayload {
+  freeze_type: 'DEBIT_FREEZE' | 'LIEN_MARKED' | 'TOTAL_FREEZE';
+  reason: string;
+  lien_amount?: number;
+  nodal_bank_name?: string;
+  investigator_name?: string;
+}
+
+export interface FreezeResponse {
+  account_id: number;
+  account_number: string;
+  is_frozen: boolean;
+  freeze_status: string;
+  freeze_reference: string;
+  frozen_at: string;
+  message: string;
+}
+
+export interface BnssNoticeData {
+  notice_reference: string;
+  statutory_act: string;
+  legal_sections: string[];
+  issuing_authority: string;
+  investigating_officer: string;
+  investigator_badge: string;
+  issue_timestamp: string;
+  target_bank: string;
+  account_number: string;
+  account_holder_name: string;
+  account_type: string;
+  city_jurisdiction: string;
+  freeze_action: string;
+  lien_amount?: number;
+  case_complaint_ref: string;
+  utr_references: string[];
+  forensic_anomaly_score: number;
+  xai_justification: string[];
+  statutory_orders: string[];
+  verification_hash: string;
 }

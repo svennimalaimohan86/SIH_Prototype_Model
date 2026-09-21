@@ -58,18 +58,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ alertCount = 10 }) => {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 ${
-                    isActive
-                      ? 'bg-white text-brand-700 shadow-sm shadow-brand-500/10'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  `flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-150 ${isActive
+                    ? 'bg-white text-brand-700 shadow-sm shadow-brand-500/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                   }`
                 }
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      isActive ? 'text-brand-600' : 'text-slate-500'
-                    }`}
+                    className={`p-1.5 rounded-lg transition-colors ${isActive ? 'text-brand-600' : 'text-slate-500'
+                      }`}
                   >
                     <Icon className="w-5 h-5" />
                   </div>
@@ -78,11 +76,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ alertCount = 10 }) => {
 
                 {item.badge ? (
                   <span
-                    className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                      isActive
+                    className={`px-2 py-0.5 text-xs font-bold rounded-full ${isActive
                         ? 'bg-rose-100 text-rose-600'
                         : 'bg-rose-50 text-rose-500'
-                    }`}
+                      }`}
                   >
                     {item.badge}
                   </span>

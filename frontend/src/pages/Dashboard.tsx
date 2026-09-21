@@ -20,13 +20,17 @@ import {
   CheckCircle2,
   ChevronRight,
   TrendingUp,
-  Tag
+  Tag,
+  Lock as LockIcon,
+  X as CloseIcon,
+  AlertOctagon
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AccountRiskScore, OverviewStats } from '../types';
 import { MetricCard } from '../components/MetricCard';
 import { RiskBadge } from '../components/RiskBadge';
 import { ExplainabilityModal } from '../components/ExplainabilityModal';
+import { BnssNoticeModal } from '../components/BnssNoticeModal';
 
 export const Dashboard: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountRiskScore[]>([]);
@@ -37,6 +41,16 @@ export const Dashboard: React.FC = () => {
   const [selectedRiskFilter, setSelectedRiskFilter] = useState<string>('ALL');
   const [selectedAccountForModal, setSelectedAccountForModal] = useState<AccountRiskScore | null>(null);
   const [inspectedAccount, setInspectedAccount] = useState<AccountRiskScore | null>(null);
+
+  // Section 107 BNSS Freeze & Notice States
+  const [freezeTargetAccount, setFreezeTargetAccount] = useState<AccountRiskScore | null>(null);
+  const [noticeAccountId, setNoticeAccountId] = useState<number | null>(null);
+  const [isNoticeOpen, setIsNoticeOpen] = useState<boolean>(false);
+  const [freezeLoading, setFreezeLoading] = useState<boolean>(false);
+  const [freezeType, setFreezeType] = useState<'DEBIT_FREEZE' | 'LIEN_MARKED' | 'TOTAL_FREEZE'>('DEBIT_FREEZE');
+  const [freezeReason, setFreezeReason] = useState<string>('');
+  const [freezeLienAmount, setFreezeLienAmount] = useState<number>(50000);
+  const [freezeNodalBank, setFreezeNodalBank] = useState<string>('State Bank of India - Nodal Operations');
 
   const navigate = useNavigate();
 
@@ -59,6 +73,40 @@ export const Dashboard: React.FC = () => {
       setError('Unable to connect to Nexora intelligence backend. Ensure the FastAPI server is running on http://localhost:8000.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openFreezeDialog = (acc: AccountRiskScore) => {
+    setFreezeTargetAccount(acc);
+    setFreezeType('DEBIT_FREEZE');
+    setFreezeReason(acc.reasons[0] || 'Anomalous velocity spike & multi-hop money mule flow');
+    setFreezeLienAmount(acc.balance > 10000 ? Math.round(acc.balance * 0.8) : 50000);
+    setFreezeNodalBank('State Bank of India - Nodal Operations');
+  };
+
+  const handleConfirmFreeze = async () => {
+    if (!freezeTargetAccount) return;
+    try {
+      setFreezeLoading(true);
+      await api.freezeAccount(freezeTargetAccount.account_id, {
+        freeze_type: freezeType,
+        reason: freezeReason,
+        lien_amount: freezeType === 'LIEN_MARKED' ? freezeLienAmount : undefined,
+        nodal_bank_name: freezeNodalBank,
+        investigator_name: 'Krishna S (Badge #21) • Lead Cybercrime Investigator',
+      });
+
+      const targetId = freezeTargetAccount.account_id;
+      setFreezeTargetAccount(null);
+      await loadData();
+      // Automatically open the official BNSS statutory notice
+      setNoticeAccountId(targetId);
+      setIsNoticeOpen(true);
+    } catch (err: any) {
+      console.error('Failed to freeze account:', err);
+      alert('Error initiating statutory freeze under Section 107 BNSS.');
+    } finally {
+      setFreezeLoading(false);
     }
   };
 
@@ -162,10 +210,6 @@ export const Dashboard: React.FC = () => {
                   <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
                     Node Forensic Inspector
                   </h3>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100 shadow-2xs">
-                    <Sparkles className="w-3 h-3" />
-                    Priority Target
-                  </span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   Key forensic intelligence and graph corridor metrics for this account node.
@@ -173,7 +217,31 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Section 107 BNSS Freeze Button */}
+              {inspectedAccount.is_frozen ? (
+                <button
+                  onClick={() => {
+                    setNoticeAccountId(inspectedAccount.account_id);
+                    setIsNoticeOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs"
+                  title="View Section 107 BNSS Statutory Freeze Notice"
+                >
+                  <LockIcon className="w-3.5 h-3.5" />
+                  <span>❄️ Frozen (View Notice)</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => openFreezeDialog(inspectedAccount)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-2xs"
+                  title="Initiate Section 107 BNSS Statutory Freeze"
+                >
+                  <LockIcon className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Freeze / Lien (BNSS)</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setSelectedAccountForModal(inspectedAccount)}
                 className="px-3.5 py-2 rounded-2xl bg-lavender-pill hover:bg-lavender-active text-brand-700 text-xs font-bold transition-all shadow-2xs"
@@ -361,11 +429,10 @@ export const Dashboard: React.FC = () => {
                 <button
                   key={filter}
                   onClick={() => setSelectedRiskFilter(filter)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    selectedRiskFilter === filter
-                      ? 'bg-white text-brand-700 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${selectedRiskFilter === filter
+                    ? 'bg-white text-brand-700 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                    }`}
                 >
                   {filter}
                 </button>
@@ -435,19 +502,17 @@ export const Dashboard: React.FC = () => {
                     <tr
                       key={acc.account_id}
                       onClick={() => setInspectedAccount(acc)}
-                      className={`hover:bg-slate-50/70 transition-colors cursor-pointer group ${
-                        isInspected ? 'bg-brand-50/30 font-medium' : ''
-                      }`}
+                      className={`hover:bg-slate-50/70 transition-colors cursor-pointer group ${isInspected ? 'bg-brand-50/30 font-medium' : ''
+                        }`}
                     >
                       {/* Account Info */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs transition-colors ${
-                              isInspected
-                                ? 'bg-brand-600 text-white'
-                                : 'bg-lavender-iconBg text-brand-700'
-                            }`}
+                            className={`w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs transition-colors ${isInspected
+                              ? 'bg-brand-600 text-white'
+                              : 'bg-lavender-iconBg text-brand-700'
+                              }`}
                           >
                             {acc.name.substring(0, 2).toUpperCase()}
                           </div>
@@ -456,6 +521,12 @@ export const Dashboard: React.FC = () => {
                               <span>{acc.account_number}</span>
                               {isInspected && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+                              )}
+                              {acc.is_frozen && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-rose-600 text-white">
+                                  <LockIcon className="w-2.5 h-2.5" />
+                                  <span>FROZEN</span>
+                                </span>
                               )}
                             </div>
                             <div className="text-slate-500 font-medium text-xs flex items-center gap-1.5 mt-0.5">
@@ -513,6 +584,34 @@ export const Dashboard: React.FC = () => {
                       {/* Action Buttons matching Demo Studio style */}
                       <td className="py-4 px-6 text-right">
                         <div className="inline-flex items-center gap-2">
+                          {/* Freeze / BNSS Notice Button */}
+                          {acc.is_frozen ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNoticeAccountId(acc.account_id);
+                                setIsNoticeOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-bold transition-colors flex items-center gap-1 border border-rose-300"
+                              title="View Section 107 BNSS Statutory Freeze Notice"
+                            >
+                              <LockIcon className="w-3 h-3 text-rose-600" />
+                              <span>Notice</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openFreezeDialog(acc);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 text-xs font-bold transition-colors flex items-center gap-1 border border-slate-200 hover:border-rose-300"
+                              title="Initiate Section 107 BNSS Account Freeze"
+                            >
+                              <LockIcon className="w-3 h-3 text-slate-500 hover:text-rose-600" />
+                              <span>Freeze</span>
+                            </button>
+                          )}
+
                           {/* Explain Button */}
                           <button
                             onClick={(e) => {
@@ -572,6 +671,173 @@ export const Dashboard: React.FC = () => {
         account={selectedAccountForModal}
         onClose={() => setSelectedAccountForModal(null)}
       />
+
+      {/* Section 107 BNSS Formal Columnar Statutory Notice Modal */}
+      <BnssNoticeModal
+        accountId={noticeAccountId}
+        isOpen={isNoticeOpen}
+        onClose={() => setIsNoticeOpen(false)}
+        onUnfreezeSuccess={loadData}
+      />
+
+      {/* Freeze Action Confirmation Dialog Modal */}
+      {freezeTargetAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-fadeIn">
+            {/* Header */}
+            <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+                  <LockIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">
+                    Statutory Account Freeze
+                  </h3>
+                  <p className="text-xs text-slate-400 font-mono">
+                    Under Section 107 BNSS (2026)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setFreezeTargetAccount(null)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-4 text-xs font-sans">
+              {/* Account Info Pill */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase block">Target Account</span>
+                  <span className="font-bold text-sm text-slate-900 font-mono">{freezeTargetAccount.account_number}</span>
+                  <span className="text-slate-600 text-xs block font-medium">{freezeTargetAccount.name} ({freezeTargetAccount.city})</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase block">Available Balance</span>
+                  <span className="font-extrabold text-sm text-slate-900">₹{freezeTargetAccount.balance.toLocaleString('en-IN')}</span>
+                  <span className="text-[10px] text-rose-600 font-bold block">Score: {freezeTargetAccount.risk_score}/100</span>
+                </div>
+              </div>
+
+              {/* Order Type Selection */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1.5">Select Freeze Order Action:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFreezeType('DEBIT_FREEZE')}
+                    className={`p-3 rounded-xl border text-left transition-all ${freezeType === 'DEBIT_FREEZE'
+                      ? 'border-rose-600 bg-rose-50/50 text-rose-900 ring-2 ring-rose-500/20'
+                      : 'border-slate-200 bg-surface-bg hover:bg-slate-50 text-slate-700'
+                      }`}
+                  >
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <LockIcon className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Full Debit Freeze</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Stops all outgoing transfers & ATM withdrawals immediately.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFreezeType('LIEN_MARKED')}
+                    className={`p-3 rounded-xl border text-left transition-all ${freezeType === 'LIEN_MARKED'
+                      ? 'border-brand-600 bg-brand-50/50 text-brand-900 ring-2 ring-brand-500/20'
+                      : 'border-slate-200 bg-surface-bg hover:bg-slate-50 text-slate-700'
+                      }`}
+                  >
+                    <div className="font-bold text-xs flex items-center gap-1.5">
+                      <AlertOctagon className="w-3.5 h-3.5 text-brand-600" />
+                      <span>Partial Lien Hold</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Locks a specific disputed amount while allowing legitimate funds.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Lien Amount (if Lien Selected) */}
+              {freezeType === 'LIEN_MARKED' && (
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Lien Hold Amount (₹ INR):</label>
+                  <input
+                    type="number"
+                    value={freezeLienAmount}
+                    onChange={(e) => setFreezeLienAmount(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              )}
+
+              {/* Nodal Bank */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Target Nodal Bank Operations:</label>
+                <select
+                  value={freezeNodalBank}
+                  onChange={(e) => setFreezeNodalBank(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white"
+                >
+                  <option value="State Bank of India - Nodal Operations">State Bank of India (SBI) - Central Nodal Wing</option>
+                  <option value="HDFC Bank - AML & Fraud Risk Desk">HDFC Bank - AML & Fraud Risk Desk</option>
+                  <option value="ICICI Bank - Law Enforcement Nodal Unit">ICICI Bank - Law Enforcement Nodal Unit</option>
+                  <option value="Axis Bank - Cybercrime Coordination Cell">Axis Bank - Cybercrime Coordination Cell</option>
+                  <option value="Canara Bank - Head Office Vigilance">Canara Bank - Head Office Vigilance</option>
+                  <option value="Indian Bank - Central Nodal Operations">Indian Bank - Central Nodal Operations</option>
+                </select>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Forensic Statutory Grounds:</label>
+                <textarea
+                  rows={2}
+                  value={freezeReason}
+                  onChange={(e) => setFreezeReason(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800"
+                  placeholder="State evidence justifying emergency freeze under Section 107 BNSS..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setFreezeTargetAccount(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmFreeze}
+                disabled={freezeLoading}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold transition-all shadow-md flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {freezeLoading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Registering BNSS Freeze...</span>
+                  </>
+                ) : (
+                  <>
+                    <LockIcon className="w-3.5 h-3.5" />
+                    <span>Issue Section 107 BNSS Order</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
