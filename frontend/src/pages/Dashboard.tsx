@@ -26,11 +26,12 @@ import {
   AlertOctagon
 } from 'lucide-react';
 import { api } from '../services/api';
-import { AccountRiskScore, OverviewStats } from '../types';
+import { AccountRiskScore, OverviewStats, WithdrawalIntel } from '../types';
 import { MetricCard } from '../components/MetricCard';
 import { RiskBadge } from '../components/RiskBadge';
 import { ExplainabilityModal } from '../components/ExplainabilityModal';
 import { BnssNoticeModal } from '../components/BnssNoticeModal';
+import { WithdrawalIntelModal } from '../components/WithdrawalIntelModal';
 
 export const Dashboard: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountRiskScore[]>([]);
@@ -51,6 +52,32 @@ export const Dashboard: React.FC = () => {
   const [freezeReason, setFreezeReason] = useState<string>('');
   const [freezeLienAmount, setFreezeLienAmount] = useState<number>(50000);
   const [freezeNodalBank, setFreezeNodalBank] = useState<string>('State Bank of India - Nodal Operations');
+
+  // Who Withdrew Money Forensic Intel states
+  const [selectedWithdrawalIntel, setSelectedWithdrawalIntel] = useState<WithdrawalIntel | null>(null);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState<boolean>(false);
+  const [withdrawalLoading, setWithdrawalLoading] = useState<boolean>(false);
+
+  const handleOpenWithdrawalIntel = async (accountId: number) => {
+    setWithdrawalLoading(true);
+    try {
+      const data = await api.getAccountWithdrawals(accountId);
+      if (data && data.length > 0) {
+        setSelectedWithdrawalIntel(data[0]);
+        setShowWithdrawalModal(true);
+      } else {
+        const fallback = await api.getWithdrawalIntel({ limit: 5 });
+        if (fallback && fallback.length > 0) {
+          setSelectedWithdrawalIntel(fallback[0]);
+          setShowWithdrawalModal(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load account withdrawal intel:', err);
+    } finally {
+      setWithdrawalLoading(false);
+    }
+  };
 
   const navigate = useNavigate();
 
@@ -247,6 +274,15 @@ export const Dashboard: React.FC = () => {
                 className="px-3.5 py-2 rounded-2xl bg-lavender-pill hover:bg-lavender-active text-brand-700 text-xs font-bold transition-all shadow-2xs"
               >
                 Explain Risk (XAI)
+              </button>
+              <button
+                onClick={() => handleOpenWithdrawalIntel(inspectedAccount.account_id)}
+                disabled={withdrawalLoading}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-800 text-xs font-bold transition-all shadow-2xs"
+                title="Inspect suspect runner, CCTV surveillance capture, and generate official forensic PDF report"
+              >
+                <Eye className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Who Withdrew? (CCTV & PDF)</span>
               </button>
               <button
                 onClick={() => navigate(`/money-flow?account_id=${inspectedAccount.account_id}`)}
@@ -624,6 +660,18 @@ export const Dashboard: React.FC = () => {
                             Explain
                           </button>
 
+                          {/* Who Withdrew Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenWithdrawalIntel(acc.account_id);
+                            }}
+                            className="p-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-900 transition-colors"
+                            title="Who Withdrew Money? (CCTV Intel & PDF Dossier)"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+
                           {/* Money Flow Button */}
                           <button
                             onClick={(e) => {
@@ -838,6 +886,18 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Forensic Who Withdrew Money Suspect Dossier & PDF Modal */}
+      <WithdrawalIntelModal
+        intel={selectedWithdrawalIntel}
+        isOpen={showWithdrawalModal}
+        onClose={() => setShowWithdrawalModal(false)}
+        onFreezeAccount={(accId) => {
+          const target = accounts.find((a) => a.account_id === accId);
+          if (target) openFreezeDialog(target);
+        }}
+      />
     </div>
   );
 };
+

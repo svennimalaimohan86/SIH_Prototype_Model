@@ -57,6 +57,21 @@ class Transaction(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     atm_id = Column(Integer, ForeignKey("atm_locations.id"), nullable=True)
 
+    # Forensic Withdrawal Intelligence Fields (for ATM_WITHDRAWAL & cashouts)
+    withdrawer_name = Column(String(128), nullable=True)
+    withdrawer_alias = Column(String(128), nullable=True)
+    withdrawer_role = Column(String(64), nullable=True)  # FIELD_CASH_RUNNER, PRIMARY_MULE, COMPROMISED_HOLDER, UNIDENTIFIED_OPERATIVE
+    withdrawer_phone = Column(String(32), nullable=True)
+    withdrawer_id_number = Column(String(64), nullable=True)  # Masked Aadhaar / PAN
+    cctv_status = Column(String(64), nullable=True)  # FACE_CAPTURED, HELMET_MASKED, LOW_LIGHT_FRAME, CLEAR_IDENTIFICATION
+    cctv_footage_ref = Column(String(128), nullable=True)  # Camera/clip reference code
+    vehicle_details = Column(String(128), nullable=True)  # e.g. "Bajaj Pulsar 150 (TN-33-AX-8921)"
+    withdrawal_method = Column(String(64), nullable=True)  # CLONED_CARD, UPI_CARDLESS_OTP, AEPS_BIOMETRIC, MAGSTRIPE_DEBIT
+    physical_description = Column(Text, nullable=True)  # Height, clothing, accessories, age estimate
+    face_match_confidence = Column(Integer, nullable=True)  # e.g. 94 (%)
+    interception_status = Column(String(64), default="IDENTIFIED")  # IDENTIFIED, PATROL_DISPATCHED, APPREHENDED, FLED_SCENE
+    nearest_patrol_unit = Column(String(128), nullable=True)
+
     # Relationships
     sender = relationship("Account", foreign_keys=[sender_account_id], back_populates="sent_transactions")
     receiver = relationship("Account", foreign_keys=[receiver_account_id], back_populates="received_transactions")

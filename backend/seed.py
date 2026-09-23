@@ -68,6 +68,7 @@ ATM_SEEDS = [
 
 def seed_database():
     # Recreate tables cleanly
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
 
@@ -161,6 +162,75 @@ def seed_database():
         db.add(complaint)
     db.commit()
 
+    # Forensic runner pools and profiles for realistic cybercrime syndicate simulation
+    RUNNER_PROFILES = [
+        {
+            "name": "Ramesh Kumar",
+            "alias": "Runner #3 (Bullet Raja)",
+            "role": "FIELD_CASH_RUNNER",
+            "phone": "+91 98421 77319",
+            "id_number": "XXXX-XXXX-8912 (Aadhaar)",
+            "vehicle": "Bajaj Pulsar 150 (TN-33-AX-8921) - Parked 15m from ATM kiosk",
+            "method": "CLONED_CARD",
+            "desc": "Male, ~26-28 yrs, Black hoodie, dark jeans, athletic build, height ~5ft 10in",
+            "cctv_status": "FACE_CAPTURED",
+            "confidence": 94,
+            "patrol": "PCR Van 07 - Tiruchengode Town Station (ETA 3 mins)"
+        },
+        {
+            "name": "Senthil Nathan",
+            "alias": "Syndicate Operative Node 103",
+            "role": "PRIMARY_MULE_RUNNER",
+            "phone": "+91 94432 10984",
+            "id_number": "ABCDE7819K (PAN)",
+            "vehicle": "Yamaha FZ-S (TN-28-K-4102) - Grey metallic, no pillion",
+            "method": "UPI_CARDLESS_OTP",
+            "desc": "Male, ~32-35 yrs, Grey windbreaker jacket, black cap, red strap backpack, height ~5ft 8in",
+            "cctv_status": "CLEAR_IDENTIFICATION",
+            "confidence": 91,
+            "patrol": "Patrol Unit 12 - Erode Railway Police Station (ETA 4 mins)"
+        },
+        {
+            "name": "Murugan Swaminathan",
+            "alias": "Cash Mule Carrier #7",
+            "role": "MULE_CARRIER",
+            "phone": "+91 97890 44521",
+            "id_number": "XXXX-XXXX-4530 (Aadhaar)",
+            "vehicle": "TVS Apache RTR 160 (TN-38-CY-1044) - Matte black",
+            "method": "MAGSTRIPE_DEBIT",
+            "desc": "Male, ~24-26 yrs, Blue checkered shirt, helmet visor pushed up during OTP entry, height ~5ft 9in",
+            "cctv_status": "FACE_CAPTURED",
+            "confidence": 88,
+            "patrol": "Mobile Patrol 04 - Salem Central Division (ETA 5 mins)"
+        },
+        {
+            "name": "Dinesh Manikandan",
+            "alias": "Account Holder / Node 127",
+            "role": "COMPROMISED_ACCOUNT_HOLDER",
+            "phone": "+91 98433 90124",
+            "id_number": "XXXX-XXXX-9041 (Aadhaar)",
+            "vehicle": "Honda Activa 6G (TN-30-BW-6190) - Pearl white",
+            "method": "CLONED_CARD",
+            "desc": "Male, ~29 yrs, Maroon jacket, spectacles, identified via KYC facial recognition match",
+            "cctv_status": "CLEAR_IDENTIFICATION",
+            "confidence": 96,
+            "patrol": "Flying Squad 02 - Coimbatore West Cyber Command (ETA 2 mins)"
+        },
+        {
+            "name": "Unidentified Runner (Syndicate Mask)",
+            "alias": "Night Ghost Runner #2",
+            "role": "UNIDENTIFIED_OPERATIVE",
+            "phone": "+91 96291 00482 (Burner SIM)",
+            "id_number": "UNVERIFIED_KYC",
+            "vehicle": "Hero Splendor+ (TN-34-H-7703) - Headlight dimmed",
+            "method": "AEPS_BIOMETRIC_SPOOF",
+            "desc": "Male, ~25-30 yrs, Black surgical mask, dark jacket, gloves worn during keypad entry",
+            "cctv_status": "HELMET_MASKED",
+            "confidence": 74,
+            "patrol": "Special Task Force Q-Branch Unit 09 (ETA 6 mins)"
+        }
+    ]
+
     print("🌱 Seeding ~1,000 Transactions (Chains, Funnels, and Normal Traffic)...")
     transactions = []
     base_time = datetime.datetime(2026, 9, 1, 0, 0, 0)
@@ -185,13 +255,26 @@ def seed_database():
         transaction_type="IMPS", timestamp=chain_time + datetime.timedelta(minutes=7)
     ))
     # Hop 4: Cash-out at Tiruchengode SBI Bus Stand ATM (ID 1)
+    prof1 = RUNNER_PROFILES[0]
     transactions.append(Transaction(
         sender_account_id=88, receiver_account_id=None, amount=40000.0,
-        transaction_type="ATM_WITHDRAWAL", timestamp=chain_time + datetime.timedelta(minutes=15), atm_id=1
+        transaction_type="ATM_WITHDRAWAL", timestamp=chain_time + datetime.timedelta(minutes=15), atm_id=1,
+        withdrawer_name=prof1["name"], withdrawer_alias=prof1["alias"], withdrawer_role=prof1["role"],
+        withdrawer_phone=prof1["phone"], withdrawer_id_number=prof1["id_number"],
+        cctv_status=prof1["cctv_status"], cctv_footage_ref="CAM-01-TCR-BS-20260913-2330.mp4",
+        vehicle_details=prof1["vehicle"], withdrawal_method=prof1["method"],
+        physical_description=prof1["desc"], face_match_confidence=prof1["confidence"],
+        interception_status="PATROL_DISPATCHED", nearest_patrol_unit=prof1["patrol"]
     ))
     transactions.append(Transaction(
         sender_account_id=88, receiver_account_id=None, amount=40000.0,
-        transaction_type="ATM_WITHDRAWAL", timestamp=chain_time + datetime.timedelta(minutes=18), atm_id=1
+        transaction_type="ATM_WITHDRAWAL", timestamp=chain_time + datetime.timedelta(minutes=18), atm_id=1,
+        withdrawer_name=prof1["name"], withdrawer_alias=prof1["alias"], withdrawer_role=prof1["role"],
+        withdrawer_phone=prof1["phone"], withdrawer_id_number=prof1["id_number"],
+        cctv_status=prof1["cctv_status"], cctv_footage_ref="CAM-01-TCR-BS-20260913-2333.mp4",
+        vehicle_details=prof1["vehicle"], withdrawal_method=prof1["method"],
+        physical_description=prof1["desc"], face_match_confidence=prof1["confidence"],
+        interception_status="PATROL_DISPATCHED", nearest_patrol_unit=prof1["patrol"]
     ))
 
     # 2. Branching Funnel Pattern (Smurfing):
@@ -208,10 +291,17 @@ def seed_database():
         ))
 
     # Multiple ATM cashouts for NX-00103 in Erode
-    for _ in range(4):
+    prof2 = RUNNER_PROFILES[1]
+    for w_idx in range(4):
         transactions.append(Transaction(
             sender_account_id=103, receiver_account_id=None, amount=50000.0,
-            transaction_type="ATM_WITHDRAWAL", timestamp=funnel_time + datetime.timedelta(hours=random.randint(1, 3)), atm_id=5
+            transaction_type="ATM_WITHDRAWAL", timestamp=funnel_time + datetime.timedelta(hours=w_idx + 1), atm_id=5,
+            withdrawer_name=prof2["name"], withdrawer_alias=prof2["alias"], withdrawer_role=prof2["role"],
+            withdrawer_phone=prof2["phone"], withdrawer_id_number=prof2["id_number"],
+            cctv_status=prof2["cctv_status"], cctv_footage_ref=f"CAM-03-ERD-PER-20260915-0{w_idx+2}30.mp4",
+            vehicle_details=prof2["vehicle"], withdrawal_method=prof2["method"],
+            physical_description=prof2["desc"], face_match_confidence=prof2["confidence"],
+            interception_status="IDENTIFIED", nearest_patrol_unit=prof2["patrol"]
         ))
 
     # 3. High-velocity bursts for NX-00127 (Dinesh M)
@@ -239,16 +329,30 @@ def seed_database():
                 timestamp=s_time + datetime.timedelta(minutes=burst_idx * random.randint(2, 6))
             ))
 
-        # ATM cashouts
+        # ATM cashouts for suspicious accounts
         atm_choice = random.choice([atm.id for atm in created_atms if atm.risk_level in ["HIGH", "MEDIUM"]])
-        for _ in range(random.randint(3, 6)):
+        r_prof = random.choice(RUNNER_PROFILES)
+        for c_idx in range(random.randint(3, 6)):
             transactions.append(Transaction(
                 sender_account_id=s_id,
                 receiver_account_id=None,
                 amount=float(random.choice([20000, 30000, 40000, 50000])),
                 transaction_type="ATM_WITHDRAWAL",
-                timestamp=s_time + datetime.timedelta(hours=random.randint(1, 4)),
-                atm_id=atm_choice
+                timestamp=s_time + datetime.timedelta(hours=random.randint(1, 4), minutes=c_idx * 12),
+                atm_id=atm_choice,
+                withdrawer_name=r_prof["name"],
+                withdrawer_alias=r_prof["alias"],
+                withdrawer_role=r_prof["role"],
+                withdrawer_phone=r_prof["phone"],
+                withdrawer_id_number=r_prof["id_number"],
+                cctv_status=r_prof["cctv_status"],
+                cctv_footage_ref=f"CAM-ATM-{atm_choice}-202609-{random.randint(1000, 9999)}.mp4",
+                vehicle_details=r_prof["vehicle"],
+                withdrawal_method=r_prof["method"],
+                physical_description=r_prof["desc"],
+                face_match_confidence=r_prof["confidence"],
+                interception_status=random.choice(["PATROL_DISPATCHED", "IDENTIFIED", "UNDER_SURVEILLANCE"]),
+                nearest_patrol_unit=r_prof["patrol"]
             ))
 
     # 5. Normal background transactions for regular accounts
@@ -274,7 +378,20 @@ def seed_database():
                 amount=float(random.choice([500, 1000, 2000, 5000, 10000])),
                 transaction_type="ATM_WITHDRAWAL",
                 timestamp=t_stamp,
-                atm_id=atm_id
+                atm_id=atm_id,
+                withdrawer_name="Legitimate Account Holder",
+                withdrawer_alias="Verified Citizen",
+                withdrawer_role="LEGITIMATE_CUSTOMER",
+                withdrawer_phone="+91 94XXX XXXXX",
+                withdrawer_id_number="VERIFIED_AADHAAR_KYC",
+                cctv_status="STANDARD_CAPTURE",
+                cctv_footage_ref=f"CAM-NORM-{atm_id}-{random.randint(100,999)}.mp4",
+                vehicle_details="Standard Foot Transit",
+                withdrawal_method="CHIP_AND_PIN_DEBIT",
+                physical_description="Verified account holder carrying authentic debit card",
+                face_match_confidence=99,
+                interception_status="CLEARED",
+                nearest_patrol_unit="Regular Jurisdiction Beat"
             ))
         else:
             transactions.append(Transaction(

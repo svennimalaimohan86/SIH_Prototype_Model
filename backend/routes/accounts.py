@@ -10,7 +10,8 @@ from schemas import (
     AccountRiskScoreResponse,
     FreezeAccountRequest,
     FreezeAccountResponse,
-    BnssNoticeResponse
+    BnssNoticeResponse,
+    WithdrawalIntelResponse
 )
 from services.risk_engine import get_risk_scores, invalidate_risk_cache
 
@@ -169,4 +170,18 @@ def get_bnss_notice(account_id: int, db: Session = Depends(get_db)):
         ],
         verification_hash=verification_hash
     )
+
+@router.get("/{account_id}/withdrawals", response_model=List[WithdrawalIntelResponse])
+def get_account_withdrawals(account_id: int, db: Session = Depends(get_db)):
+    """
+    Returns all ATM cash-out events and suspect withdrawal dossiers linked to a specific account.
+    """
+    from routes.predictions import format_withdrawal_intel
+    withdrawals = db.query(Transaction).filter(
+        Transaction.transaction_type == "ATM_WITHDRAWAL",
+        Transaction.sender_account_id == account_id
+    ).order_by(Transaction.timestamp.desc()).all()
+
+    return [format_withdrawal_intel(w, db) for w in withdrawals]
+
 

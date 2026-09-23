@@ -5,7 +5,7 @@ import os
 from database import engine, Base, SessionLocal
 from models import Account
 from seed import seed_database
-from routes import accounts, money_flow, predictions, alerts
+from routes import accounts, money_flow, predictions, alerts, copilot
 from services.risk_engine import get_risk_scores
 
 # Initialize FastAPI App
@@ -29,6 +29,7 @@ app.include_router(accounts.router)
 app.include_router(money_flow.router)
 app.include_router(predictions.router)
 app.include_router(alerts.router)
+app.include_router(copilot.router)
 
 @app.on_event("startup")
 def on_startup():

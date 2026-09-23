@@ -13,9 +13,10 @@ import {
 
 interface SidebarProps {
   alertCount?: number;
+  onOpenCopilot?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ alertCount = 10 }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ alertCount = 10, onOpenCopilot }) => {
   const location = useLocation();
 
   const navItems = [
@@ -87,6 +88,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ alertCount = 10 }) => {
               </NavLink>
             );
           })}
+
+          {/* AI Copilot Quick Action in Nav */}
+          {onOpenCopilot && (
+            <button
+              onClick={onOpenCopilot}
+              className="w-full mt-2 flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-purple-100/80 to-indigo-100/80 text-purple-900 hover:from-purple-200/90 hover:to-indigo-200/90 border border-purple-200/60 shadow-2xs transition-all duration-150"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 rounded-lg bg-purple-600 text-white shadow-2xs">
+                  <Radio className="w-4 h-4 animate-pulse" />
+                </div>
+                <span>AI Copilot</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-white/80 rounded border border-purple-200 text-purple-800">
+                ⌘ J
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

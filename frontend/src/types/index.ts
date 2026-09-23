@@ -158,3 +158,138 @@ export interface BnssNoticeData {
   statutory_orders: string[];
   verification_hash: string;
 }
+
+export interface CopilotAccountCard {
+  id: number;
+  account_number: string;
+  name: string;
+  city?: string;
+  risk_score: number;
+  risk_level: string;
+  is_flagged?: boolean;
+  is_frozen?: boolean;
+}
+
+export interface CopilotATMCard {
+  id: number;
+  name: string;
+  location: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  confidence: number;
+  time_window: string;
+  risk_level: string;
+}
+
+export interface CopilotQueryResponse {
+  query_type: string;
+  answer: string;
+  relevant_accounts: CopilotAccountCard[];
+  relevant_atms: CopilotATMCard[];
+  suggested_actions: string[];
+}
+
+export interface ATMCashoutEvent {
+  id: number;
+  atm_name: string;
+  location: string;
+  city: string;
+  mule_name: string;
+  mule_account_number: string;
+  amount: number;
+  timestamp: string;
+  risk_level: string;
+  status: string;
+  is_predicted: boolean;
+}
+
+export interface LaunderingHop {
+  hop_number: number;
+  stage_name: string;
+  source: string;
+  destination: string;
+  amount: number;
+  channel: string;
+  description: string;
+}
+
+export interface ComplaintDetail {
+  complaint_number: string;
+  victim_account_id: number;
+  description: string;
+  amount: number;
+  reported_at: string;
+  status: string;
+}
+
+export interface CaseBriefingData {
+  case_id: string;
+  timestamp: string;
+  suspect_info: {
+    account_id: number;
+    account_number: string;
+    name: string;
+    city: string;
+    balance: number;
+    risk_score: number;
+    risk_level: string;
+    is_frozen?: boolean;
+    freeze_status?: string;
+  };
+  executive_summary: string;
+  modus_operandi: string;
+  financial_trail: {
+    total_inflow: number;
+    total_outflow: number;
+    direct_counterparties: number;
+    total_hops: number;
+    associated_complaints: number;
+  };
+  predicted_cashout: {
+    atm_name: string;
+    location: string;
+    confidence: number;
+    time_window: string;
+  };
+  atm_cashout_events?: ATMCashoutEvent[];
+  laundering_hops?: LaunderingHop[];
+  complaint_details?: ComplaintDetail[];
+  utr_references?: string[];
+  key_reasons: string[];
+  statutory_directives: string[];
+}
+
+export interface WithdrawalIntel {
+  transaction_id: number;
+  account_id: number;
+  account_number: string;
+  account_holder_name: string;
+  amount: number;
+  timestamp: string;
+  formatted_time: string;
+  atm_id?: number;
+  atm_name?: string;
+  atm_location?: string;
+  atm_city?: string;
+  atm_latitude?: number;
+  atm_longitude?: number;
+  atm_risk_level?: string;
+  withdrawer_name: string;
+  withdrawer_alias: string;
+  withdrawer_role: string;
+  withdrawer_phone: string;
+  withdrawer_id_number: string;
+  face_match_confidence: number;
+  cctv_status: string;
+  cctv_footage_ref: string;
+  vehicle_details: string;
+  withdrawal_method: string;
+  physical_description: string;
+  interception_status: string;
+  nearest_patrol_unit: string;
+  utr_number: string;
+  forensic_tags: string[];
+  case_complaint_ref?: string;
+}
+

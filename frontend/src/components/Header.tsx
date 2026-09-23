@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Calendar, ChevronDown } from 'lucide-react';
+import { Search, Bell, Calendar, ChevronDown, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
   alertCount?: number;
+  onOpenCopilot?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onSearch, alertCount = 10 }) => {
+export const Header: React.FC<HeaderProps> = ({ onSearch, alertCount = 10, onOpenCopilot }) => {
   const [searchValue, setSearchValue] = useState('');
   const [currentTime, setCurrentTime] = useState('17 Sept 2026 • 12:11:09 pm');
   const navigate = useNavigate();
@@ -59,7 +60,20 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, alertCount = 10 }) => 
       </div>
 
       {/* Right Controls matching Image 2 */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        {/* AI Copilot Quick Launch Pill */}
+        <button
+          onClick={onOpenCopilot}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-brand-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          title="Open AI Cybercrime Copilot (⌘ J)"
+        >
+          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+          <span>AI Copilot</span>
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white/20 text-white rounded">
+            ⌘ J
+          </kbd>
+        </button>
+
         {/* Notification Bell */}
         <button
           onClick={() => navigate('/alerts')}

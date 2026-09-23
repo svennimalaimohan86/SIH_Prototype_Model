@@ -5,7 +5,9 @@ import {
   CashoutPrediction,
   ATMLocation,
   AlertItem,
-  OverviewStats
+  OverviewStats,
+  CopilotQueryResponse,
+  CaseBriefingData
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -79,4 +81,35 @@ export const api = {
     const response = await client.get(`/accounts/${accountId}/bnss-notice`);
     return response.data;
   },
+
+  copilotQuery: async (query: string, contextAccountId?: number): Promise<CopilotQueryResponse> => {
+    const response = await client.post<CopilotQueryResponse>('/copilot/query', {
+      query,
+      context_account_id: contextAccountId
+    });
+    return response.data;
+  },
+
+  getCaseBriefing: async (accountId: number | string): Promise<CaseBriefingData> => {
+    const response = await client.post<CaseBriefingData>(`/copilot/case-briefing/${accountId}`);
+    return response.data;
+  },
+
+  getWithdrawalIntel: async (params?: { account_id?: number; atm_id?: number; limit?: number }) => {
+    const response = await client.get<import('../types').WithdrawalIntel[]>('/predictions/withdrawals/intel', {
+      params,
+    });
+    return response.data;
+  },
+
+  getAtmWithdrawals: async (atmId: number) => {
+    const response = await client.get<import('../types').WithdrawalIntel[]>(`/predictions/atms/${atmId}/withdrawals`);
+    return response.data;
+  },
+
+  getAccountWithdrawals: async (accountId: number | string) => {
+    const response = await client.get<import('../types').WithdrawalIntel[]>(`/accounts/${accountId}/withdrawals`);
+    return response.data;
+  },
 };
+

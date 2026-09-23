@@ -158,3 +158,41 @@ class BnssNoticeResponse(BaseModel):
     xai_justification: List[str]
     statutory_orders: List[str]
     verification_hash: str
+
+
+class WithdrawalIntelResponse(BaseModel):
+    transaction_id: int
+    account_id: int
+    account_number: str
+    account_holder_name: str
+    amount: float
+    timestamp: datetime
+    formatted_time: str
+    atm_id: Optional[int] = None
+    atm_name: Optional[str] = None
+    atm_location: Optional[str] = None
+    atm_city: Optional[str] = None
+    atm_latitude: Optional[float] = None
+    atm_longitude: Optional[float] = None
+    atm_risk_level: Optional[str] = None
+    
+    # Forensic Person / Runner Profile
+    withdrawer_name: str
+    withdrawer_alias: str
+    withdrawer_role: str
+    withdrawer_phone: str
+    withdrawer_id_number: str
+    face_match_confidence: int
+    cctv_status: str
+    cctv_footage_ref: str
+    vehicle_details: str
+    withdrawal_method: str
+    physical_description: str
+    interception_status: str
+    nearest_patrol_unit: str
+    utr_number: str
+    
+    # Forensic notes & action tags
+    forensic_tags: List[str] = []
+    case_complaint_ref: Optional[str] = None
+

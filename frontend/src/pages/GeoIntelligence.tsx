@@ -37,8 +37,9 @@ import {
   X as CloseIcon,
 } from 'lucide-react';
 import { api } from '../services/api';
-import { ATMLocation, CashoutPrediction, AccountRiskScore } from '../types';
+import { ATMLocation, CashoutPrediction, AccountRiskScore, WithdrawalIntel } from '../types';
 import { RiskBadge } from '../components/RiskBadge';
+import { WithdrawalIntelModal } from '../components/WithdrawalIntelModal';
 
 // Fix for default Leaflet icon assets
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -1191,6 +1192,36 @@ export const GeoIntelligence: React.FC = () => {
   const [alertSent, setAlertSent] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Who Withdrew Money Forensic Intel states
+  const [selectedWithdrawalIntel, setSelectedWithdrawalIntel] = useState<WithdrawalIntel | null>(null);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState<boolean>(false);
+  const [loadingWithdrawal, setLoadingWithdrawal] = useState<boolean>(false);
+
+  const handleOpenWithdrawalIntel = async (atmId?: number, accountId?: number) => {
+    setLoadingWithdrawal(true);
+    try {
+      const data = await api.getWithdrawalIntel({
+        atm_id: atmId,
+        account_id: accountId || (selectedAccountId ? Number(selectedAccountId) : undefined),
+        limit: 10
+      });
+      if (data && data.length > 0) {
+        setSelectedWithdrawalIntel(data[0]);
+        setShowWithdrawalModal(true);
+      } else {
+        const fallback = await api.getWithdrawalIntel({ limit: 5 });
+        if (fallback && fallback.length > 0) {
+          setSelectedWithdrawalIntel(fallback[0]);
+          setShowWithdrawalModal(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load withdrawal intel:', err);
+    } finally {
+      setLoadingWithdrawal(false);
+    }
+  };
+
   const [mapCenter, setMapCenter] = useState<[number, number]>([11.38, 77.89]); // Default Erode/Tiruchengode center
   const [mapZoom, setMapZoom] = useState<number>(11);
 
@@ -2338,12 +2369,22 @@ export const GeoIntelligence: React.FC = () => {
                           </span>
                         </div>
 
-                        <button
-                          onClick={() => handleSelectAtm(atm)}
-                          className="w-full py-1.5 rounded-lg bg-[#1A73E8] text-white text-[11px] font-bold hover:bg-blue-700 transition-colors"
-                        >
-                          Plot Google Maps Road Directions
-                        </button>
+                        <div className="space-y-1.5">
+                          <button
+                            onClick={() => handleSelectAtm(atm)}
+                            className="w-full py-1.5 rounded-lg bg-[#1A73E8] text-white text-[11px] font-bold hover:bg-blue-700 transition-colors"
+                          >
+                            Plot Google Maps Road Directions
+                          </button>
+
+                          <button
+                            onClick={() => handleOpenWithdrawalIntel(atm.id)}
+                            className="w-full py-1.5 rounded-lg bg-indigo-600 text-white text-[11px] font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Who Withdrew Money? (CCTV Intel)</span>
+                          </button>
+                        </div>
                       </div>
                     </Popup>
                   </Marker>
@@ -2919,6 +2960,15 @@ export const GeoIntelligence: React.FC = () => {
                 </button>
 
                 <button
+                  onClick={() => handleOpenWithdrawalIntel(selectedAtm.id)}
+                  disabled={loadingWithdrawal}
+                  className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm shadow-indigo-500/25"
+                >
+                  <Eye className="w-4 h-4 text-indigo-200" />
+                  <span>{loadingWithdrawal ? 'Loading Suspect Dossier...' : 'Who Withdrew Money Here? (CCTV Intel & PDF)'}</span>
+                </button>
+
+                <button
                   onClick={handleDispatchAlert}
                   className="w-full py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm shadow-brand-500/20"
                 >
@@ -3058,6 +3108,14 @@ export const GeoIntelligence: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Forensic Who Withdrew Money Suspect Dossier & PDF Modal */}
+      <WithdrawalIntelModal
+        intel={selectedWithdrawalIntel}
+        isOpen={showWithdrawalModal}
+        onClose={() => setShowWithdrawalModal(false)}
+      />
     </div>
   );
 };
+
